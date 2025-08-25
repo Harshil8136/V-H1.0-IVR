@@ -24,6 +24,14 @@
         <section class="simulation-controls">
             <h2>Call Simulation</h2>
             <p>Use these controls to trigger events in the CCP window once it's open.</p>
+
+            <div class="form-group">
+                <label for="biller-select-dropdown">Select a Biller to Simulate:</label>
+                <select id="biller-select-dropdown" disabled>
+                    <option value="">Loading billers...</option>
+                </select>
+            </div>
+            
             <div class="button-group">
                 <button id="simulate-call-btn" disabled>
                     <i class="fa-solid fa-phone-arrow-down-left"></i> 
@@ -43,16 +51,27 @@
                         </tr>
                     </thead>
                     <tbody id="log-table-body">
-                        <tr>
-                            <td>Friday, 5:55 PM</td>
-                            <td>System</td>
-                            <td>Launcher initialized. Ready to start simulation.</td>
-                        </tr>
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </section>
     </div>
+
+    <script>
+        const billerData = [
+          { "id": 1, "billerName": "CONSUMER ENERGY", "tla": "CEMI", "kbLink": "https://kb.paymentus.io/display/CSR/CEMI+-+Consumers+Energy", "ivrNumber": "866-329-9593", "adLink": "https://adg-ipn1.paymentus.net/CEMI?v2=true", "csrNumber": "800-477-5050", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 2, "billerName": "AUSTIN ENERGY", "tla": "AETX", "kbLink": "https://kb.paymentus.io/display/CSR/AETX+-+Austin+Energy", "ivrNumber": "833-375-4919", "adLink": "https://adg-ipn1.paymentus.net/aetx?v2=true&lang=en", "csrNumber": "512-494-9400", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 3, "billerName": "BALTIMORE GAS & ELECTRIC", "tla": "BGE", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165610", "ivrNumber": "1-833-254-9875", "adLink": "https://adg-ipn1.paymentus.net/bge?v2=true&lang=en", "csrNumber": "1-800-685-0123", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 4, "billerName": "ATLANTIC CITY ELECTRIC", "tla": "PHI", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165643", "ivrNumber": null, "adLink": null, "csrNumber": null, "englishIvr": null, "spanishIvr": null },
+          { "id": 5, "billerName": "DELMARVA POWER", "tla": "PHI", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165643", "ivrNumber": null, "adLink": null, "csrNumber": null, "englishIvr": null, "spanishIvr": null }
+        ];
+
+        const simulationData = [
+          { "customerPhoneNumber": "+1 541-979-2208", "billerId": 1, "customerName": "John Smith", "accountNumber": "100123456789", "state": "MI", "ivrSelections": { "reason": "Make a payment", "service": "Gas" } },
+          { "customerPhoneNumber": "+1 512-555-0199", "billerId": 2, "customerName": "Maria Garcia", "accountNumber": "200987654321", "state": "TX", "ivrSelections": { "reason": "Discuss bill", "service": "Electricity" } },
+          { "customerPhoneNumber": "+1 410-555-0134", "billerId": 3, "customerName": "David Chen", "accountNumber": "3005551212", "state": "MD", "ivrSelections": { "reason": "Make a payment", "service": "Electricity" } }
+        ];
+    </script>
 
     <script src="src/js/ccp-state.js"></script>
     <script src="src/js/ccp-ui.js"></script>
