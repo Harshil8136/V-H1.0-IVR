@@ -9,19 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const logTableBody = document.getElementById('log-table-body');
 
     /**
-     * ::: UPDATE: Populates the dropdown from the embedded billerData variable. :::
+     * ::: UPDATE: Populates the dropdown intelligently. :::
+     * It now only shows billers that have a corresponding simulation scenario.
      */
     const loadBillers = () => {
-        // The billerData and simulationData variables are now globally available from index.html
         if (typeof billerData !== 'undefined' && typeof simulationData !== 'undefined') {
-            // Load the data into our central state object
             appState.billerData = billerData;
             appState.simulationData = simulationData;
 
-            // Clear the "Loading..." option
+            // First, find out which biller IDs have a simulation available.
+            const availableSimIds = new Set(appState.simulationData.map(sim => sim.billerId));
+
             billerDropdown.innerHTML = '<option value="">-- Select a Biller --</option>';
 
-            appState.billerData.forEach(biller => {
+            // Filter the main biller list to only include those with available simulations.
+            const availableBillers = appState.billerData.filter(biller => availableSimIds.has(biller.id));
+
+            availableBillers.forEach(biller => {
                 const option = document.createElement('option');
                 option.value = biller.id;
                 option.textContent = biller.billerName;
@@ -29,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             billerDropdown.disabled = false;
-            logMessage('System', 'Biller data loaded successfully.');
+            logMessage('System', `${availableBillers.length} biller simulations loaded successfully.`);
         } else {
             billerDropdown.innerHTML = '<option value="">Error: Data not found</option>';
             logMessage('Error', 'Embedded billerData or simulationData variable not found.');
