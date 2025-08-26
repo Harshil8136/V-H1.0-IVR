@@ -73,6 +73,14 @@
           { "customerPhoneNumber": "+1 609-555-0155", "billerId": 4, "customerName": "Emily White", "accountNumber": "4002223334", "state": "NJ", "ivrSelections": { "reason": "Discuss bill", "service": "Electricity" } },
           { "customerPhoneNumber": "+1 302-555-0188", "billerId": 5, "customerName": "Michael Brown", "accountNumber": "5007778889", "state": "DE", "ivrSelections": { "reason": "Make a payment", "service": "Gas & Electric" } }
         ];
+
+        // ::: UPDATE: New data source for Quick Connects :::
+        const quickConnectsData = [
+            { "id": "qc-1", "name": "Main Support Line", "type": "phone", "target": "+1-800-555-1234" },
+            { "id": "qc-2", "name": "Tier 2 Support", "type": "queue", "target": "Tier_2_Support_Queue" },
+            { "id": "qc-3", "name": "John Doe (Supervisor)", "type": "agent", "target": "johndoe" },
+            { "id": "qc-4", "name": "Billing Department", "type": "queue", "target": "Billing_Queue" }
+        ];
     </script>
 
     <script src="src/js/ccp-state.js"></script>
