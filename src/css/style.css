@@ -155,11 +155,4 @@ button {
 /* ::: FIX: Make overlays sit above everything ::: */
 .ccp-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--background-grey); display: flex; flex-direction: column; z-index: 999; }
 .ccp-overlay.hidden { display: none; }
-.ccp-overlay-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #dee2e6; flex-shrink: 0; }
-.ccp-overlay-header h3 { margin: 0; font-size: 1.1rem; }
-.ccp-overlay-header .fa-xmark { font-size: 1.2rem; cursor: pointer; }
-.ccp-numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 1rem; }
-.ccp-numpad-grid button { padding: 16px; font-size: 1.5rem; background: #fff; border: 1px solid #ccc; border-radius: 8px; }
-.ccp-quick-connects-list { padding: 8px; overflow-y: auto; }
-.qc-item { padding: 12px 16px; border-bottom: 1px solid #dee2e6; cursor: pointer; }
-.qc-item:hover { background-color: #e9ecef; }
+.ccp-overlay-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-
