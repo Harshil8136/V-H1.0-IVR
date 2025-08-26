@@ -6,23 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const launchBtn = document.getElementById('launch-ccp-btn');
     const simulateCallBtn = document.getElementById('simulate-call-btn');
     const billerDropdown = document.getElementById('biller-select-dropdown');
-    const logTableBody = document.getElementById('log-table-body');
 
     /**
-     * ::: UPDATE: Populates the dropdown intelligently. :::
-     * It now only shows billers that have a corresponding simulation scenario.
+     * Populates the dropdown from the embedded billerData variable.
+     * It only shows billers that have a corresponding simulation scenario.
      */
     const loadBillers = () => {
         if (typeof billerData !== 'undefined' && typeof simulationData !== 'undefined') {
             appState.billerData = billerData;
             appState.simulationData = simulationData;
 
-            // First, find out which biller IDs have a simulation available.
             const availableSimIds = new Set(appState.simulationData.map(sim => sim.billerId));
 
             billerDropdown.innerHTML = '<option value="">-- Select a Biller --</option>';
 
-            // Filter the main biller list to only include those with available simulations.
             const availableBillers = appState.billerData.filter(biller => availableSimIds.has(biller.id));
 
             availableBillers.forEach(biller => {
@@ -46,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const launchCCP = () => {
         if (appState.ccpWindow && !appState.ccpWindow.closed) {
             appState.ccpWindow.focus();
-            logMessage('System', 'CCP window already open. Focussing.');
+            logMessage('System', 'CCP window already open. Focusing.'); // Typo fix
             return;
         }
 
@@ -64,11 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
             logMessage('System', 'CCP window launched and events initialized.');
         };
         
+        // ::: FIX: More robust shutdown hygiene :::
         appState.ccpWindow.onbeforeunload = () => {
             logMessage('System', 'CCP window closed.');
             appState.calls.forEach(call => clearInterval(call.timerInterval));
             clearInterval(appState.acwTimerInterval);
-            resetState();
+            
+            // Perform a targeted cleanup to leave the launcher in a clean, idle state
+            appState.calls = [];
+            appState.isIncoming = false;
+            appState.isConferenced = false;
+            appState.isInACW = false;
+            appState.activePanel = 'none';
+            
             appState.ccpWindow = null;
             simulateCallBtn.disabled = true;
             billerDropdown.selectedIndex = 0;
