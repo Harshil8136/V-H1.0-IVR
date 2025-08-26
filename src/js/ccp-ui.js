@@ -270,15 +270,14 @@ function renderCallView(doc) {
     multiControls.classList.toggle('hidden', callCount < 2 || appState.isConferenced);
     confControls.classList.toggle('hidden', !appState.isConferenced);
 
-    if (callCount === 1) {
-        const call = appState.calls[0];
+    if (callCount > 0) {
         const holdBtn = doc.getElementById('hold-resume-btn');
         const muteBtn = doc.getElementById('mute-unmute-btn');
 
-        if (call.status === 'onHold') {
+        if (appState.calls.some(c => c.status === 'onHold') && callCount === 1) {
             holdBtn.classList.add('active');
             holdBtn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Resume</span>`;
-        } else {
+        } else if (holdBtn) {
             holdBtn.classList.remove('active');
             holdBtn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Hold</span>`;
         }
@@ -286,9 +285,13 @@ function renderCallView(doc) {
         if (appState.isMuted) {
             muteBtn.classList.add('active');
             muteBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> <span>Unmute</span>`;
+            doc.getElementById('mute-btn-multi')?.classList.add('active');
+            doc.getElementById('conf-mute-btn')?.classList.add('active');
         } else {
             muteBtn.classList.remove('active');
             muteBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> <span>Mute</span>`;
+            doc.getElementById('mute-btn-multi')?.classList.remove('active');
+            doc.getElementById('conf-mute-btn')?.classList.remove('active');
         }
     }
 }
