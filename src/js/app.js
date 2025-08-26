@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Populates the dropdown from the embedded billerData variable.
-     * It only shows billers that have a corresponding simulation scenario.
+     * It now only shows billers that have a corresponding simulation scenario.
      */
     const loadBillers = () => {
         if (typeof billerData !== 'undefined' && typeof simulationData !== 'undefined') {
@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.simulationData = simulationData;
 
             const availableSimIds = new Set(appState.simulationData.map(sim => sim.billerId));
-
             billerDropdown.innerHTML = '<option value="">-- Select a Biller --</option>';
 
             const availableBillers = appState.billerData.filter(biller => availableSimIds.has(biller.id));
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const launchCCP = () => {
         if (appState.ccpWindow && !appState.ccpWindow.closed) {
             appState.ccpWindow.focus();
-            logMessage('System', 'CCP window already open. Focusing.'); // Typo fix
+            logMessage('System', 'CCP window already open. Focusing.');
             return;
         }
 
