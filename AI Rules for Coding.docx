@@ -1,0 +1,73 @@
+CCP_Simulator/
+├── index.html
+└── src/
+    ├── css/
+    │   └── style.css
+    ├── js/
+    │   ├── app.js
+    │   ├── ccp-state.js
+    │   └── ccp-ui.js
+    └── audio/
+        ├── ringtone.mp3
+        └── dtmf-tone.mp3
+
+
+# Project Constitution: Rules and Directives for the CCP Simulator (V2)
+
+This document outlines the governing principles for all development on the High-Fidelity CCP Simulator project. These rules are designed to ensure stability, maintainability, and alignment with the project's specific environmental constraints.
+
+---
+
+## Section 1: Core Mandates 📜
+These are the foundational, non-negotiable rules that define the project's environment and structure.
+
+### 1. The Zero-Dependency Environment
+This project must operate without any external tools, installations, or local servers. All solutions must be self-contained within the provided files.
+* **No Browser Developer Tools:** All debugging and diagnostics must be achievable without requiring the use of the browser's developer console.
+* **No New Software Installations:** The project must not require the user to install any software, including but not limited to local web servers, package managers, or build tools.
+
+### 2. The Modular File Mandate
+The project's source code must always be maintained in separate, specialized files. This is critical for clarity, maintainability, and ensuring reliable code generation.
+* **No Single-File Solutions:** Under no circumstances shall the CSS and multiple JavaScript files be consolidated into a single `index.html` file.
+* **File Integrity:** Each file (`app.js`, `ccp-state.js`, etc.) must remain distinct, with a clearly defined purpose.
+
+---
+
+## Section 2: Architectural Principles 🏛️
+These rules define the software architecture and data flow to ensure the application is robust and scalable.
+
+### 3. Strict Separation of Concerns
+Each JavaScript file has a distinct and exclusive role. Logic must not bleed between them.
+* **`ccp-state.js` (The Brain):** Solely responsible for managing the application's state (`appState`) and containing the core business logic. It must not contain any code that directly manipulates the DOM or triggers UI rendering.
+* **`ccp-ui.js` (The View):** Solely responsible for rendering the user interface based on the current state. It contains the HTML template and the master rendering functions. It must not contain any business logic for changing the state.
+* **`app.js` (The Conductor):** Acts as the central controller. It is the only file responsible for orchestrating the communication between the Brain and the View.
+
+### 4. The "Single Conductor" Data Flow
+To prevent race conditions and ensure stability, the application must follow a strict, one-way data flow managed exclusively by `app.js`.
+* **Orchestration:** All event listeners that trigger state changes will be initialized and managed by `app.js`.
+* **State-Then-Render Loop:** For any user action, `app.js` must first call a function in the Brain (`ccp-state.js`) to update the state, and *then* call a function in the View (`ccp-ui.js`) to render the UI based on the new state.
+
+### 5. Centralized and Embedded Data
+To comply with the Zero-Dependency Mandate, all simulation data must be embedded directly within `index.html`.
+* **No `fetch()` API:** The application must not use `fetch()` or other methods to load local JSON files.
+* **Data Location:** All data sources (`billerData`, `simulationData`, etc.) will be defined as global JavaScript variables within `<script>` tags in `index.html`.
+
+### 6. The Principle of Scalability and File Division
+To ensure long-term maintainability and facilitate error-free integration of new features, no single source file should become excessively large or complex.
+* **The 15,000 Character Threshold:** If any single JavaScript file exceeds **15,000 characters** in length, a plan must be devised to split it into smaller, more specialized modules.
+* **Logical Splitting:** Files should be split based on functionality. For example, `ccp-state.js` could be divided into separate files for core state management, complex call flow logic (consult, transfer), and UI state logic (overlays, agent status).
+* **AI Collaboration:** This practice improves collaboration with AI models, as smaller, focused files provide better context and lead to more accurate and reliable code generation with fewer prompts.
+
+---
+
+## Section 3: User Experience & Design Directives 🎨
+These rules govern the visual and interactive goals of the simulator.
+
+### 7. High-Fidelity Visuals
+The simulator's appearance must strive to be a high-fidelity replica of the modern Amazon Connect Contact Control Panel (CCP), as guided by provided reference images.
+
+### 8. Agent-Centric UI Design
+The in-call display of information must be optimized for a working agent in a time-sensitive environment.
+* **Low AHT Focus:** The design must prioritize scannability and reduce the agent's cognitive load to support a low Average Handling Time (AHT).
+* **Visual Hierarchy:** Typography, color, icons, and spacing must be used to create a clear visual hierarchy, drawing the agent's attention to the most critical information first.
+* **Palette Consistency:** All color-coding and design elements must adhere to the established CCP color palette to maintain a professional and consistent look.
