@@ -20,13 +20,11 @@ const appState = {
 };
 
 function logMessage(type, details) {
-    // This function can be called from the CCP window context, but the table is in the main window.
     const mainDoc = window.opener ? window.opener.document : window.document;
     const logTableBody = mainDoc.getElementById('log-table-body');
     if (!logTableBody) return;
 
     const timestamp = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit'});
-    // ::: FIX: Corrected typo from logTablebody to logTableBody :::
     const newRow = logTableBody.insertRow(0);
     const cell1 = newRow.insertCell(0);
     const cell2 = newRow.insertCell(1);
@@ -170,7 +168,6 @@ function leaveCall() {
     startACW();
 }
 
-// ::: FIX: Rewritten ACW transition logic for stability :::
 function startACW() {
     const lastCallNumbers = appState.calls.map(c => c.phoneNumber).join(', ') || 'Unknown';
 
@@ -209,7 +206,6 @@ function startACW() {
     }, 1000);
 }
 
-// ::: FIX: Cleaned up ACW end logic :::
 function endACW() {
     logMessage('System', 'ACW ended. Agent is now idle.');
     clearInterval(appState.acwTimerInterval);
@@ -226,7 +222,6 @@ function toggleHoldIndividual(callId) {
     renderCCP();
 }
 
-// ::: FIX: New multi-call helper functions :::
 function holdAll() {
     if (appState.calls.length === 0) return;
     appState.calls.forEach(c => c.status = 'onHold');
@@ -240,7 +235,6 @@ function muteAllToggle() {
     renderCCP();
 }
 
-// ::: FIX: Safer status change with DOM guards :::
 function changeAgentStatus(newStatus) {
     appState.agentStatus = newStatus;
    if (appState.ccpWindow && !appState.ccpWindow.closed) {
@@ -277,7 +271,6 @@ function initializeCCPEvents() {
     appState.ccpWindow.document.body.addEventListener('click', () => { if (statusMenu && statusMenu.style.display === 'block') statusMenu.style.display = 'none'; });
     statusMenu?.addEventListener('click', (event) => { if (event.target.classList.contains('ccp-status-menu-item')) { changeAgentStatus(event.target.dataset.status); } });
 
-    // Existing event listeners
     doc.getElementById('idle-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
     doc.getElementById('idle-quick-connects-btn')?.addEventListener('click', () => openOverlay('quickConnects'));
     doc.getElementById('accept-call-btn')?.addEventListener('click', acceptCall);
@@ -285,7 +278,7 @@ function initializeCCPEvents() {
     doc.getElementById('end-leave-call-btn')?.addEventListener('click', leaveCall);
     doc.getElementById('close-contact-btn')?.addEventListener('click', endACW);
     doc.getElementById('hold-resume-btn')?.addEventListener('click', () => { if (appState.calls[0]) toggleHoldIndividual(appState.calls[0].id); });
-    doc.getElementById('mute-unmute-btn')?.addEventListener('click', muteAllToggle); // Use consistent mute function
+    doc.getElementById('mute-unmute-btn')?.addEventListener('click', muteAllToggle);
     doc.getElementById('numpad-btn')?.addEventListener('click', addSecondCall);
     doc.getElementById('quick-connects-btn')?.addEventListener('click', () => openOverlay('quickConnects'));
     doc.getElementById('swap-btn')?.addEventListener('click', swapCalls);
@@ -304,6 +297,8 @@ function initializeCCPEvents() {
         if (e.target.classList.contains('copy-icon')) {
             const textToCopy = e.target.dataset.copyText;
             if (textToCopy) {
+                // ::: FIX: Focus the window before accessing the clipboard :::
+                appState.ccpWindow.focus();
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     logMessage('System', `Copied: ${textToCopy}`);
                     e.target.classList.add('copied');
@@ -317,7 +312,6 @@ function initializeCCPEvents() {
         }
     });
     
-    // ::: FIX: Wire all previously unhandled buttons :::
     doc.getElementById('header-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
     doc.getElementById('hold-all-btn')?.addEventListener('click', holdAll);
     doc.getElementById('mute-btn-multi')?.addEventListener('click', muteAllToggle);
