@@ -131,11 +131,15 @@ function renderCCP() {
     const doc = appState.ccpWindow.document;
     const views = ['welcome-view', 'incoming-call-view', 'call-view', 'acw-view'];
     views.forEach(id => doc.getElementById(id)?.classList.add('hidden'));
+    
+    // Always clear the active panel when switching major views
+    if (appState.activePanel !== 'none' && !appState.isIncoming && appState.calls.length === 0 && !appState.isInACW) {
+        appState.activePanel = 'none';
+    }
 
     if (appState.isIncoming) {
         doc.getElementById('incoming-call-view').classList.remove('hidden');
         doc.getElementById('incoming-number-display').textContent = appState.incomingCallNumber;
-        // Also render the context view in the background so it's ready on accept
         if (appState.calls.length === 0) renderCallView(doc);
     } else if (appState.calls.length > 0) {
         doc.getElementById('call-view').classList.remove('hidden');
@@ -159,16 +163,14 @@ function renderCallView(doc) {
     const container = doc.getElementById('multi-call-container');
     container.innerHTML = '';
 
-    // Render call strips only if there's an active call
     if (callCount > 0) {
         appState.calls.forEach(call => {
-            const strip = document.createElement('div');
-            let statusText = call.status.charAt(0).toUpperCase() + call.status.slice(1);
-            if (call.status === 'onHold') {
-                statusText = 'On hold';
-            } else {
-                statusText = 'Connected call';
-            }
+            // ::: FIX: Create element from the pop-up's document object :::
+            const strip = doc.createElement('div');
+            // ::: FIX: More accurate status text for conferences :::
+            let statusText = (call.status === 'onHold')
+              ? 'On hold'
+              : (appState.isConferenced ? 'Conference' : 'Connected call');
             
             strip.className = `call-strip status-${call.status}`;
             strip.innerHTML = `
@@ -193,10 +195,8 @@ function renderCallView(doc) {
         });
     }
 
-    // ::: UPDATE: Redesigned context display with cards, icons, and buttons :::
     const contextContainer = doc.getElementById('call-context-display');
     if (appState.currentCallData) {
-        // First, check if there's a data error to display
         if (appState.currentCallData.error) {
             contextContainer.innerHTML = `<div class="context-error">
                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -204,8 +204,6 @@ function renderCallView(doc) {
             </div>`;
         } else {
             const data = appState.currentCallData;
-            
-            // Build the link buttons, only showing them if the link exists
             let linksHTML = '';
             if (data.kbLink) {
                 linksHTML += `<a href="${data.kbLink}" target="_blank" class="context-link-btn">KB Link</a>`;
@@ -213,8 +211,6 @@ function renderCallView(doc) {
             if (data.adLink) {
                 linksHTML += `<a href="${data.adLink}" target="_blank" class="context-link-btn">AD Link</a>`;
             }
-
-            // Build the final HTML with cards, icons, and conditional buttons
             contextContainer.innerHTML = `
                 <div class="context-card">
                     <div class="context-item-main">
@@ -240,7 +236,6 @@ function renderCallView(doc) {
                         <i class="fa-solid fa-copy copy-icon" title="Copy Account #" data-copy-text="${data.accountNumber}"></i>
                     </div>
                 </div>
-
                 <div class="context-card">
                     <div class="context-item">
                         <i class="fa-solid fa-circle-info"></i>
