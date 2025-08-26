@@ -25,7 +25,7 @@ function logMessage(type, details) {
     if (!logTableBody) return;
 
     const timestamp = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit'});
-    const newRow = logTableBody.insertRow(0);
+    const newRow = logTablebody.insertRow(0);
     const cell1 = newRow.insertCell(0);
     const cell2 = newRow.insertCell(1);
     const cell3 = newRow.insertCell(2);
@@ -47,15 +47,15 @@ function resetState() {
 function startTimer(call) {
     let elapsedSeconds = 0;
     const updateTimer = () => {
-        if (appState.ccpWindow && !appState.ccpWindow.closed) {
-            const timerEl = appState.ccpWindow.document.getElementById(`timer-${call.id}`);
-            if (timerEl) {
-                timerEl.textContent = formatTime(elapsedSeconds);
-            }
-            elapsedSeconds++;
-        } else {
+        if (!appState.ccpWindow || appState.ccpWindow.closed) {
             clearInterval(call.timerInterval);
+            return;
         }
+        const timerEl = appState.ccpWindow.document.getElementById(`timer-${call.id}`);
+        if (timerEl) {
+            timerEl.textContent = formatTime(elapsedSeconds);
+        }
+        elapsedSeconds++;
     };
     updateTimer();
     call.timerInterval = setInterval(updateTimer, 1000);
@@ -76,7 +76,6 @@ function setIncomingCall(billerId) {
         return;
     }
 
-    // ::: UPDATE: Data validation for missing simulation scenarios :::
     if (!sim) {
         logMessage('Warning', `No simulation data found for ${biller.billerName}.`);
         appState.currentCallData = {
@@ -106,11 +105,10 @@ function setIncomingCall(billerId) {
 }
 
 function acceptCall() {
-    // ::: UPDATE: Prevent call from being accepted if there was a data error :::
     if (appState.currentCallData && appState.currentCallData.error) {
         appState.isIncoming = false;
         logMessage('System', 'Blocked call acceptance due to simulation data error.');
-        renderCCP(); // Re-render to clear the incoming call view
+        renderCCP();
         return;
     }
 
@@ -167,39 +165,54 @@ function dropCall(callId) {
 
 function leaveCall() {
     logMessage('Call Event', 'Agent left all calls. Entering ACW.');
-    appState.calls.forEach(call => clearInterval(call.timerInterval));
     startACW();
 }
 
+// ::: FIX: Rewritten ACW transition logic for stability :::
 function startACW() {
-    const lastCallNumbers = appState.calls.map(c => c.phoneNumber).join(', ');
-    if (appState.ccpWindow && !appState.ccpWindow.closed) {
-        appState.ccpWindow.document.getElementById('acw-number-display').innerHTML = `<strong>${lastCallNumbers}</strong>`;
-    }
+    const lastCallNumbers = appState.calls.map(c => c.phoneNumber).join(', ') || 'Unknown';
 
-    resetState();
+    appState.calls.forEach(call => clearInterval(call.timerInterval));
+
+    appState.calls = [];
+    appState.isIncoming = false;
+    appState.isConferenced = false;
+    appState.activePanel = 'none';
+    appState.currentCallData = null;
+    
     appState.isInACW = true;
     appState.acwTimeRemaining = 10;
     
-    const acwTimerEl = appState.ccpWindow?.document.getElementById('acw-timer');
-    if (acwTimerEl) acwTimerEl.textContent = formatTime(appState.acwTimeRemaining);
-    
+    renderCCP();
+
+    const doc = appState.ccpWindow && !appState.ccpWindow.closed ? appState.ccpWindow.document : null;
+    if (doc) {
+        const numEl = doc.getElementById('acw-number-display');
+        const timerEl = doc.getElementById('acw-timer');
+        if (numEl) numEl.innerHTML = `<strong>${lastCallNumbers}</strong>`;
+        if (timerEl) timerEl.textContent = formatTime(appState.acwTimeRemaining);
+    }
+
+    clearInterval(appState.acwTimerInterval);
     appState.acwTimerInterval = setInterval(() => {
         appState.acwTimeRemaining--;
-        if (appState.ccpWindow && !appState.ccpWindow.closed) {
-            const timerEl = appState.ccpWindow.document.getElementById('acw-timer');
-            if (timerEl) timerEl.textContent = formatTime(appState.acwTimeRemaining);
+        const d = appState.ccpWindow && !appState.ccpWindow.closed ? appState.ccpWindow.document : null;
+        if (d) {
+            const t = d.getElementById('acw-timer');
+            if (t) t.textContent = formatTime(appState.acwTimeRemaining);
         }
         if (appState.acwTimeRemaining <= 0) {
             endACW();
         }
     }, 1000);
-    renderCCP();
 }
 
+// ::: FIX: Cleaned up ACW end logic :::
 function endACW() {
     logMessage('System', 'ACW ended. Agent is now idle.');
-    resetState();
+    clearInterval(appState.acwTimerInterval);
+    appState.isInACW = false;
+    appState.activePanel = 'none';
     renderCCP();
 }
 
@@ -211,18 +224,31 @@ function toggleHoldIndividual(callId) {
     renderCCP();
 }
 
-function toggleMute() {
+// ::: FIX: New multi-call helper functions :::
+function holdAll() {
+    if (appState.calls.length === 0) return;
+    appState.calls.forEach(c => c.status = 'onHold');
+    logMessage('Call Event', 'All calls placed on hold.');
+    renderCCP();
+}
+
+function muteAllToggle() {
     appState.isMuted = !appState.isMuted;
     logMessage('Agent Event', `Agent is now ${appState.isMuted ? 'muted' : 'unmuted'}.`);
     renderCCP();
 }
 
+// ::: FIX: Safer status change with DOM guards :::
 function changeAgentStatus(newStatus) {
     appState.agentStatus = newStatus;
-    const doc = appState.ccpWindow.document;
-    doc.getElementById('agent-status-text').textContent = newStatus;
+    if (appState.ccpWindow && !appState.ccpWindow.closed) {
+       const doc = appState.ccpWindow.document;
+       const el = doc.getElementById('agent-status-text');
+       if (el) el.textContent = newStatus;
+       const menu = doc.getElementById('status-menu');
+       if (menu) menu.style.display = 'none';
+   }
     logMessage('Agent Event', `Status changed to: ${newStatus}`);
-    doc.getElementById('status-menu').style.display = 'none';
 }
 
 function openOverlay(panelName) {
@@ -240,13 +266,14 @@ function closeOverlays() {
 }
 
 function initializeCCPEvents() {
+    if (!appState.ccpWindow || appState.ccpWindow.closed) return;
     const doc = appState.ccpWindow.document;
 
     const statusDropdown = doc.getElementById('status-dropdown');
     const statusMenu = doc.getElementById('status-menu');
-    statusDropdown.addEventListener('click', (event) => { event.stopPropagation(); statusMenu.style.display = statusMenu.style.display === 'block' ? 'none' : 'block'; });
-    appState.ccpWindow.document.body.addEventListener('click', () => { if (statusMenu.style.display === 'block') statusMenu.style.display = 'none'; });
-    statusMenu.addEventListener('click', (event) => { if (event.target.classList.contains('ccp-status-menu-item')) { changeAgentStatus(event.target.dataset.status); } });
+    statusDropdown?.addEventListener('click', (event) => { event.stopPropagation(); statusMenu.style.display = statusMenu.style.display === 'block' ? 'none' : 'block'; });
+    appState.ccpWindow.document.body.addEventListener('click', () => { if (statusMenu && statusMenu.style.display === 'block') statusMenu.style.display = 'none'; });
+    statusMenu?.addEventListener('click', (event) => { if (event.target.classList.contains('ccp-status-menu-item')) { changeAgentStatus(event.target.dataset.status); } });
 
     doc.getElementById('idle-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
     doc.getElementById('idle-quick-connects-btn')?.addEventListener('click', () => openOverlay('quickConnects'));
@@ -255,7 +282,7 @@ function initializeCCPEvents() {
     doc.getElementById('end-leave-call-btn')?.addEventListener('click', leaveCall);
     doc.getElementById('close-contact-btn')?.addEventListener('click', endACW);
     doc.getElementById('hold-resume-btn')?.addEventListener('click', () => { if (appState.calls[0]) toggleHoldIndividual(appState.calls[0].id); });
-    doc.getElementById('mute-unmute-btn')?.addEventListener('click', toggleMute);
+    doc.getElementById('mute-unmute-btn')?.addEventListener('click', muteAllToggle);
     doc.getElementById('numpad-btn')?.addEventListener('click', addSecondCall);
     doc.getElementById('quick-connects-btn')?.addEventListener('click', () => openOverlay('quickConnects'));
     doc.getElementById('swap-btn')?.addEventListener('click', swapCalls);
@@ -263,15 +290,14 @@ function initializeCCPEvents() {
     doc.getElementById('close-numpad-btn')?.addEventListener('click', closeOverlays);
     doc.getElementById('close-quick-connects-btn')?.addEventListener('click', closeOverlays);
     
-    doc.getElementById('multi-call-container').addEventListener('click', (e) => {
+    doc.getElementById('multi-call-container')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('drop-call-btn')) {
             const callId = parseInt(e.target.dataset.id, 10);
             dropCall(callId);
         }
     });
 
-    // ::: UPDATE: Delegated event listener for copy-to-clipboard icons :::
-    doc.getElementById('call-view').addEventListener('click', (e) => {
+    doc.getElementById('call-view')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('copy-icon')) {
             const textToCopy = e.target.dataset.copyText;
             if (textToCopy) {
@@ -287,4 +313,15 @@ function initializeCCPEvents() {
             }
         }
     });
+
+    // ::: FIX: Wire all previously unhandled buttons :::
+    doc.getElementById('header-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
+    doc.getElementById('hold-all-btn')?.addEventListener('click', holdAll);
+    doc.getElementById('mute-btn-multi')?.addEventListener('click', muteAllToggle);
+    doc.getElementById('numpad-btn-multi')?.addEventListener('click', () => openOverlay('numpad'));
+    doc.getElementById('conf-hold-all-btn')?.addEventListener('click', holdAll);
+    doc.getElementById('conf-mute-btn')?.addEventListener('click', muteAllToggle);
+    doc.getElementById('conf-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
+    doc.getElementById('acw-numpad-btn')?.addEventListener('click', () => openOverlay('numpad'));
+    doc.getElementById('acw-quick-connects-btn')?.addEventListener('click', () => openOverlay('quickConnects'));
 }
