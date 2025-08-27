@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Simulator - Launcher</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="launcher-container">
+        <header class="launcher-header">
+            <h1>High-Fidelity CCP Simulator</h1>
+            <p>A realistic demonstration environment for the V-H1.0 project.</p>
+        </header>
+
+        <section class="launcher-controls">
+            <button id="launch-ccp-btn">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                Launch CCP
+            </button>
+            <p class="small-text">This will open the simulator in a new pop-up window.</p>
+            
+            <div class="form-group form-group-inline">
+                <label for="ccp-size-select">CCP Pop-up Size:</label>
+                <select id="ccp-size-select">
+                    <option value="small">Small (300x550)</option>
+                    <option value="default" selected>Default (340x650)</option>
+                    <option value="large">Large (380x750)</option>
+                </select>
+            </div>
+        </section>
+
+        <hr>
+        <section class="simulation-controls">
+            <h2>Call Simulation</h2>
+            <p>Use these controls to trigger events in the CCP window once it's open.</p>
+
+            <div class="form-group">
+                <label for="biller-select-dropdown">Select a Biller to Simulate:</label>
+                <select id="biller-select-dropdown" disabled>
+                    <option value="">Loading billers...</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button id="simulate-call-btn" disabled>
+                    <i class="fa-solid fa-phone-arrow-down-left"></i> 
+                    Simulate Incoming Call
+                </button>
+            </div>
+        </section>
+        <section class="log-viewer">
+            <h2>Simulation Event Log</h2>
+            <div class="log-table-container">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Event Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const billerData = [
+          { "id": 1, "billerName": "CONSUMER ENERGY", "tla": "CEMI", "kbLink": "https://kb.paymentus.io/display/CSR/CEMI+-+Consumers+Energy", "ivrNumber": "866-329-9593", "adLink": "https://adg-ipn1.paymentus.net/CEMI?v2=true", "csrNumber": "800-477-5050", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 2, "billerName": "AUSTIN ENERGY", "tla": "AETX", "kbLink": "https://kb.paymentus.io/display/CSR/AETX+-+Austin+Energy", "ivrNumber": "833-375-4919", "adLink": "https://adg-ipn1.paymentus.net/aetx?v2=true&lang=en", "csrNumber": "512-494-9400", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 3, "billerName": "BALTIMORE GAS & ELECTRIC", "tla": "BGE", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165610", "ivrNumber": "1-833-254-9875", "adLink": "https://adg-ipn1.paymentus.net/bge?v2=true&lang=en", "csrNumber": "1-800-685-0123", "englishIvr": null, "spanishIvr": "EXT # 2" },
+          { "id": 4, "billerName": "ATLANTIC CITY ELECTRIC", "tla": "PHI", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165643", "ivrNumber": null, "adLink": null, "csrNumber": null, "englishIvr": null, "spanishIvr": null },
+          { "id": 5, "billerName": "DELMARVA POWER", "tla": "PHI", "kbLink": "https://kb.paymentus.io/pages/viewpage.action?pageId=58165643", "ivrNumber": null, "adLink": null, "csrNumber": null, "englishIvr": null, "spanishIvr": null }
+        ];
+
+        const simulationData = [
+          { "customerPhoneNumber": "+1 541-979-2208", "billerId": 1, "customerName": "John Smith", "accountNumber": "100123456789", "state": "MI", "ivrSelections": { "reason": "Make a payment", "service": "Gas" } },
+          { "customerPhoneNumber": "+1 512-555-0199", "billerId": 2, "customerName": "Maria Garcia", "accountNumber": "200987654321", "state": "TX", "ivrSelections": { "reason": "Discuss bill", "service": "Electricity" } },
+          { "customerPhoneNumber": "+1 410-555-0134", "billerId": 3, "customerName": "David Chen", "accountNumber": "3005551212", "state": "MD", "ivrSelections": { "reason": "Make a payment", "service": "Electricity" } },
+          { "customerPhoneNumber": "+1 609-555-0155", "billerId": 4, "customerName": "Emily White", "accountNumber": "4002223334", "state": "NJ", "ivrSelections": { "reason": "Discuss bill", "service": "Electricity" } },
+          { "customerPhoneNumber": "+1 302-555-0188", "billerId": 5, "customerName": "Michael Brown", "accountNumber": "5007778889", "state": "DE", "ivrSelections": { "reason": "Make a payment", "service": "Gas & Electric" } }
+        ];
+
+        const quickConnectsData = [
+            { "id": "qc-1", "name": "Main Support Line", "type": "phone", "target": "+1-800-555-1234" },
+            { "id": "qc-2", "name": "Tier 2 Support", "type": "queue", "target": "Tier_2_Support_Queue" },
+            { "id": "qc-3", "name": "John Doe (Supervisor)", "type": "agent", "target": "johndoe" },
+            { "id": "qc-4", "name": "Billing Department", "type": "queue", "target": "Billing_Queue" }
+        ];
+    </script>
+
+    <script src="src/js/ccp-state.js"></script>
+    <script src="src/js/ccp-ui.js"></script>
+    <script src="src/js/app.js"></script>
+</body>
+</html>
