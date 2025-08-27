@@ -1,0 +1,35 @@
+[
+  {
+    "customerPhoneNumber": "+1 541-979-2208",
+    "billerId": 1,
+    "customerName": "John Smith",
+    "accountNumber": "100123456789",
+    "state": "MI",
+    "ivrSelections": {
+      "reason": "Make a payment",
+      "service": "Gas"
+    }
+  },
+  {
+    "customerPhoneNumber": "+1 512-555-0199",
+    "billerId": 2,
+    "customerName": "Maria Garcia",
+    "accountNumber": "200987654321",
+    "state": "TX",
+    "ivrSelections": {
+      "reason": "Discuss bill",
+      "service": "Electricity"
+    }
+  },
+  {
+    "customerPhoneNumber": "+1 410-555-0134",
+    "billerId": 3,
+    "customerName": "David Chen",
+    "accountNumber": "3005551212",
+    "state": "MD",
+    "ivrSelections": {
+      "reason": "Make a payment",
+      "service": "Electricity"
+    }
+  }
+]
