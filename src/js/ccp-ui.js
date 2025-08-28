@@ -12,9 +12,13 @@ const ccpHtmlTemplate = `
     <body class="ccp-body">
         <header class="ccp-header">
             <div class="ccp-status-dropdown" id="status-dropdown">
-                <i class="fa-solid fa-microphone"></i>
-                <span id="agent-status-text">Available</span>
-                <i class="fa-solid fa-chevron-down"></i>
+                <div class="ccp-status-display">
+                    <i class="fa-solid fa-microphone"></i>
+                    <span id="agent-status-text">Available</span>
+                </div>
+                <div class="ccp-status-toggle" id="status-toggle-btn">
+                     <i class="fa-solid fa-chevron-down"></i>
+                </div>
                 <div class="ccp-status-menu" id="status-menu">
                     <div class="ccp-status-menu-item" data-status="Available">Available</div>
                     <div class="ccp-status-menu-item" data-status="Lunch">Lunch</div>
@@ -80,7 +84,10 @@ const ccpHtmlTemplate = `
             <div class="ccp-view hidden" id="acw-view">
                 <div class="acw-info">
                     <div id="acw-number-display"></div>
-                    <div><span>After call work</span><span id="acw-timer">00:10</span></div>
+                    <div class="acw-status-text">
+                        <span>After call work</span>
+                        <span id="acw-timer">00:10</span>
+                    </div>
                 </div>
                 <div class="acw-controls">
                     <button id="acw-numpad-btn"><i class="fa-solid fa-grip"></i> Number pad</button>
@@ -209,16 +216,12 @@ function renderCCP() {
     if (!appState.ccpWindow || appState.ccpWindow.closed) return;
 
     const doc = appState.ccpWindow.document;
-
-    // ::: UPDATE: Apply theme class to body :::
     doc.body.className = `ccp-body theme-${appState.settings.theme}`;
     
     const views = ['welcome-view', 'incoming-call-view', 'call-view', 'acw-view'];
     views.forEach(id => doc.getElementById(id)?.classList.add('hidden'));
     
-    // This logic can be simplified, but for now, it ensures overlays don't persist improperly.
     if (appState.activePanel !== 'none' && appState.calls.length === 0 && !appState.isInACW && !appState.isIncoming) {
-       // Allow settings and numpad on idle screen
        if (appState.activePanel !== 'settings' && appState.activePanel !== 'numpad' && appState.activePanel !== 'quickConnects') {
             appState.activePanel = 'none';
        }
@@ -232,15 +235,18 @@ function renderCCP() {
         doc.getElementById('call-view').classList.remove('hidden');
         renderCallView(doc);
     } else if (appState.isInACW) {
-        doc.getElementById('acw-view').classList.remove('hidden');
+        const acwView = doc.getElementById('acw-view');
+        acwView.classList.remove('hidden');
+        const acwNumDisplay = doc.getElementById('acw-number-display');
+        if (acwNumDisplay) acwNumDisplay.innerHTML = `<strong>${appState.lastCallInfo}</strong>`;
+        const acwTimer = doc.getElementById('acw-timer');
+        if (acwTimer) acwTimer.textContent = formatTime(appState.acwTimeRemaining);
     } else {
         const welcomeView = doc.getElementById('welcome-view');
         welcomeView.classList.remove('hidden');
-        // ::: UPDATE: Populate welcome message :::
         doc.getElementById('welcome-message').textContent = `Welcome ${appState.agentName}`;
     }
     
-    // --- OVERLAY RENDERING ---
     const overlays = ['numpad-overlay', 'quick-connects-overlay', 'settings-overlay'];
     const panelMap = { numpad: 'numpad-overlay', quickConnects: 'quick-connects-overlay', settings: 'settings-overlay' };
     overlays.forEach(id => {
@@ -248,22 +254,18 @@ function renderCCP() {
         if(el) el.classList.toggle('hidden', panelMap[appState.activePanel] !== id);
     });
 
-    // Render Numpad Content
     if (appState.activePanel === 'numpad') {
         const numpadInput = doc.getElementById('numpad-input');
         if (numpadInput) numpadInput.value = appState.outboundDialNumber;
-
         const callBtn = doc.getElementById('numpad-call-btn');
-        const qcBtn = doc.getElementById('numpad-quick-connects-btn');
-        if (callBtn && qcBtn) {
+        if (callBtn) {
             const showOutboundControls = appState.isNumpadForOutbound;
             callBtn.style.display = showOutboundControls ? 'flex' : 'none';
-            qcBtn.style.display = showOutboundControls ? 'flex' : 'none';
+            doc.getElementById('numpad-quick-connects-btn').style.display = showOutboundControls ? 'flex' : 'none';
             callBtn.disabled = !appState.outboundDialNumber;
         }
     }
 
-    // Render Quick Connects Content
     if (appState.activePanel === 'quickConnects') {
         const listContainer = doc.querySelector('.ccp-quick-connects-list');
         listContainer.innerHTML = '';
@@ -282,7 +284,6 @@ function renderCCP() {
         });
     }
 
-    // ::: UPDATE: Render Settings Content :::
     if (appState.activePanel === 'settings') {
         doc.getElementById('ringtone-interval-select').value = appState.settings.ringtoneInterval;
         const ringtoneRadio = doc.querySelector(`input[name="ringtone"][value="${appState.settings.ringtoneFile}"]`);
@@ -315,7 +316,7 @@ function renderCallView(doc) {
                 <div class="call-strip-info">
                     <div class="call-strip-left-stack">
                         <div class="call-strip-number">
-                            <i class="fa-solid fa-phone"></i>
+                            <i class="fa-solid fa-file-invoice"></i>
                             <span>${call.phoneNumber}</span>
                         </div>
                         <div class="call-strip-timer">
@@ -342,52 +343,67 @@ function renderCallView(doc) {
             </div>`;
         } else {
             const data = appState.currentCallData;
+            const statusTag = data.isLive 
+                ? `<span class="context-tag status-live">Live</span>` 
+                : `<span class="context-tag status-not-live">Not Live</span>`;
+            
+            // ::: UPDATE: Logic to build links now includes kbLink :::
             let linksHTML = '';
-            if (data.kbLink) linksHTML += `<a href="${data.kbLink}" target="_blank" class="context-link-btn">KB Link</a>`;
-            if (data.adLink) linksHTML += `<a href="${data.adLink}" target="_blank" class="context-link-btn">AD Link</a>`;
+            if (data.kbLink) {
+                linksHTML += `<a href="${data.kbLink}" target="_blank" class="context-link-btn">KB Link</a>`;
+            }
+            if (data.adLink) {
+                linksHTML += `<a href="${data.adLink}" target="_blank" class="context-link-btn">AD Link</a>`;
+            }
+
             contextContainer.innerHTML = `
                 <div class="context-card">
                     <div class="context-item-main">
                         <i class="fa-solid fa-building"></i>
                         <div class="context-text">
                             <span class="context-label">Biller</span>
-                            <span class="context-value-large">${data.billerName} (${data.billerTla})</span>
+                            <span class="context-value-large">${data.billerName} (${data.tla})</span>
                         </div>
-                    </div>
-                    <div class="context-item-main">
-                        <i class="fa-solid fa-user"></i>
-                        <div class="context-text">
-                            <span class="context-label">Customer Name</span>
-                            <span class="context-value-large">${data.customerName}</span>
-                        </div>
+                        ${statusTag}
                     </div>
                     <div class="context-item">
-                        <i class="fa-solid fa-hashtag"></i>
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
                         <div class="context-text">
-                            <span class="context-label">Account Number</span>
-                            <span class="context-value">${data.accountNumber}</span>
+                            <span class="context-label">Payment Type</span>
+                            <span class="context-value">${data.paymentType || 'N/A'}</span>
                         </div>
-                        <i class="fa-solid fa-copy copy-icon" title="Copy Account #" data-copy-text="${data.accountNumber}"></i>
-                    </div>
-                </div>
-                <div class="context-card">
-                    <div class="context-item">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div class="context-text">
-                            <span class="context-label">Reason for Call</span>
-                            <span class="context-tag">${data.reasonForCall}</span>
-                        </div>
-                    </div>
-                    <div class="context-item">
-                        <i class="fa-solid fa-phone-volume"></i>
-                         <div class="context-text">
-                            <span class="context-label">IVR # / CX Tel</span>
-                            <span class="context-value">${data.billerIvrNumber} / ${data.customerTel} (${data.customerState})</span>
-                        </div>
-                        <i class="fa-solid fa-copy copy-icon" title="Copy Phone #" data-copy-text="${data.customerTel}"></i>
                     </div>
                     <div class="context-item-links">
                         ${linksHTML}
+                    </div>
+                </div>
+
+                <div class="context-card">
+                    <div class="context-item">
+                        <i class="fa-solid fa-phone-volume"></i>
+                        <div class="context-text">
+                            <span class="context-label">IVR Number</span>
+                            <span class="context-value">${data.ivrNumber || 'N/A'}</span>
+                        </div>
+                        ${data.ivrNumber ? `<i class="fa-solid fa-copy copy-icon" title="Copy IVR #" data-copy-text="${data.ivrNumber}"></i>` : ''}
+                    </div>
+                    <div class="context-item">
+                        <i class="fa-solid fa-headset"></i>
+                        <div class="context-text">
+                            <span class="context-label">Customer Service</span>
+                            <span class="context-value">${data.csrNumber || 'N/A'}</span>
+                        </div>
+                        ${data.csrNumber ? `<i class="fa-solid fa-copy copy-icon" title="Copy CSR #" data-copy-text="${data.csrNumber}"></i>` : ''}
+                    </div>
+                </div>
+
+                <div class="context-card">
+                     <div class="context-item">
+                        <i class="fa-solid fa-clipboard"></i>
+                        <div class="context-text">
+                            <span class="context-label">Notes</span>
+                            <span class="context-value notes-value">${data.notes || 'None'}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -399,22 +415,14 @@ function renderCallView(doc) {
     const singleControls = doc.getElementById('single-call-controls');
     const multiControls = doc.getElementById('multi-call-controls');
     const confControls = doc.getElementById('conference-controls');
-    const transferBtn = doc.getElementById('transfer-btn');
-
     const inConsultState = callCount === 2 && !appState.isConferenced;
-
     singleControls.classList.toggle('hidden', callCount !== 1);
     multiControls.classList.toggle('hidden', !inConsultState);
     confControls.classList.toggle('hidden', !appState.isConferenced);
 
-    if (transferBtn) {
-        transferBtn.style.display = inConsultState ? 'flex' : 'none';
-    }
-
     if (callCount > 0) {
         const holdBtn = doc.getElementById('hold-resume-btn');
         const muteBtn = doc.getElementById('mute-unmute-btn');
-
         if (appState.calls.some(c => c.status === 'onHold') && callCount === 1) {
             holdBtn?.classList.add('active');
             if(holdBtn) holdBtn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Resume</span>`;
@@ -422,7 +430,6 @@ function renderCallView(doc) {
             holdBtn.classList.remove('active');
             holdBtn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Hold</span>`;
         }
-
         if (appState.isMuted) {
             muteBtn?.classList.add('active');
             doc.getElementById('mute-btn-multi')?.classList.add('active');
