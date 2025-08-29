@@ -69,12 +69,14 @@
     </div>
 
     <script src="src/js/biller-data.js"></script>
+
     <script>
-        // Quick Connects data remains embedded.
+        // ::: UPDATE: Agent objects now include a 'status' property :::
         const quickConnectsData = [
             { "id": "qc-1", "name": "Main Support Line", "type": "phone", "target": "+1-800-555-1234" },
             { "id": "qc-2", "name": "Tier 2 Support", "type": "queue", "target": "Tier_2_Support_Queue" },
-            { "id": "qc-3", "name": "John Doe (Supervisor)", "type": "agent", "target": "johndoe" },
+            { "id": "qc-3", "name": "John Doe (Supervisor)", "type": "agent", "status": "Available", "target": "johndoe" },
+            { "id": "qc-5", "name": "Jane Smith (Tier 2)", "type": "agent", "status": "Busy", "target": "janesmith" },
             { "id": "qc-4", "name": "Billing Department", "type": "queue", "target": "Billing_Queue" }
         ];
     </script>
