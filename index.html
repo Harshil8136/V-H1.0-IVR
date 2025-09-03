@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Simulator - Launcher</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="launcher-container">
+        <header class="launcher-header">
+            <h1>High-Fidelity CCP Simulator</h1>
+            <p>A realistic demonstration environment for the V-H1.0 project.</p>
+        </header>
+
+        <section class="launcher-controls">
+            <button id="launch-ccp-btn">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                Launch CCP
+            </button>
+            <p class="small-text">This will open the simulator in a new pop-up window.</p>
+            
+            <div class="form-group form-group-inline">
+                <label for="ccp-size-select">CCP Pop-up Size:</label>
+                <select id="ccp-size-select">
+                    <option value="small" selected>Small (300x550)</option>
+                    <option value="default">Default (340x650)</option>
+                    <option value="large">Large (380x750)</option>
+                </select>
+            </div>
+        </section>
+
+        <hr>
+        <section class="simulation-controls">
+            <h2>Call Simulation</h2>
+            <p>Use these controls to trigger events in the CCP window once it's open.</p>
+
+            <div class="form-group">
+                <label for="biller-select-dropdown">Select a Biller to Simulate:</label>
+                <select id="biller-select-dropdown" disabled>
+                    <option value="">Loading billers...</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button id="simulate-call-btn" disabled>
+                    <i class="fa-solid fa-phone-arrow-down-left"></i> 
+                    Simulate Incoming Call
+                </button>
+            </div>
+        </section>
+        <section class="log-viewer">
+            <h2>Simulation Event Log</h2>
+            <div class="log-table-container">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Event Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="src/js/biller-data.js"></script>
+
+    <script>
+        // ::: UPDATE: Agent objects now include a 'status' property :::
+        const quickConnectsData = [
+            { "id": "qc-1", "name": "Main Support Line", "type": "phone", "target": "+1-800-555-1234" },
+            { "id": "qc-2", "name": "Tier 2 Support", "type": "queue", "target": "Tier_2_Support_Queue" },
+            { "id": "qc-3", "name": "John Doe (Supervisor)", "type": "agent", "status": "Available", "target": "johndoe" },
+            { "id": "qc-5", "name": "Jane Smith (Tier 2)", "type": "agent", "status": "Busy", "target": "janesmith" },
+            { "id": "qc-4", "name": "Billing Department", "type": "queue", "target": "Billing_Queue" }
+        ];
+    </script>
+
+    <script src="src/js/ccp-state.js"></script>
+    <script src="src/js/ccp-templates.js"></script>
+    <script src="src/js/ccp-ui.js"></script>
+    <script src="src/js/app.js"></script>
+</body>
+</html>
